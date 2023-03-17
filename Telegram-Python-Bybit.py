@@ -2,18 +2,18 @@ import requests
 import ccxt
 
 exchange = ccxt.bybit({
-    'apiKey': '6Z1bOetRqDSjvKUI5G',
-    'secret': 'hLWFjqtpYquGwJBmVL8Zh8NlWxbE2UjqhLbn',
+    'apiKey': 'BYBIT_API_KEY',
+    'secret': 'SECRET_BYBIT_API_KEY',
 })
 
-bot_token = '6090463556:AAHofa_7MVtGilhwy2_4SlDuMT9WAtwhNdI'
-channel_id = '@ceinturionsinhibai'
+bot_token = 'BOT_API'
+channel_id = '@ID_CHANEL'
 
 last_update_id = 0
 
 #Récupère le message dans le canal télégram
 while True:
-    response = requests.get(f"https://api.telegram.org/bot6090463556:AAHofa_7MVtGilhwy2_4SlDuMT9WAtwhNdI/getUpdates?offset={last_update_id+1}&allowed_updates=[\"channel_post\"]").json()
+    response = requests.get(f"https://api.telegram.org/botBOT_API/getUpdates?offset={last_update_id+1}&allowed_updates=[\"channel_post\"]").json()
     updates = response["result"]
     for update in updates:
         message = update["channel_post"].get("text")
