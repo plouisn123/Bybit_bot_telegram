@@ -160,7 +160,8 @@ while True:
                 else:
                     exchange.create_limit_buy_order(symbol=symbol, amount=quantity, price=SL, params = {'stopPrice': SL}) #SL (short)
                     
- #Problem 1: if liquidation price > stop loss, stop loss order become short order
+#Problem 1: if liquidation price > stop loss -> stop loss order become short order
+#Problem 2: if take profit is hit, stop loss not desactivate -> short order
 
         
                
