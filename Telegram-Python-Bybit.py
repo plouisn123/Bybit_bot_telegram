@@ -156,7 +156,7 @@ while True:
                 exchange.create_order(symbol=symbol, type='Limit', side=BorS, amount=quantity, price=PE)            #Entry
                 exchange.create_order(symbol=symbol, type='Limit', side=close, amount=quantity, price=TPs[1])       #TP 
                 if BorS == 'Buy':
-                    exchange.create_stop_limit_order(symbol=symbol,side=close, amount=quantity, price=SL, stopPrice=SL)   #SL (long)
+                    exchange.create_limit_order(symbol=symbol, side=close, amount=quantity, price=SL, params={'stopLossPrice': SL}) #SL close long
                 else:
                     exchange.create_limit_buy_order(symbol=symbol, amount=quantity, price=SL, params = {'stopPrice': SL}) #SL (short)
                     
