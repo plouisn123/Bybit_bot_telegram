@@ -9,17 +9,17 @@ exchange = ccxt.bybit({
 bot_token = 'BOT_TOKEN'
 channel_id = '@CHANEL'
 last_update_id = 0
+dollar=float(50) #choose how many usdt from your wallet you want to trade
 
 #Get new messages from Telegram Chanel
 while True:
     response = requests.get(f"https://api.telegram.org/botBOT_TOKEN/getUpdates?offset={last_update_id+1}&allowed_updates=[\"channel_post\"]").json()
     updates = response["result"]
     for update in updates:
-        message = update["channel_post"]["text"]
+        message = updates[-1]["channel_post"]["text"]
         #message = update["channel_post"]["text"]
         last_update_id = update["update_id"] 
         text = message
-        print(text)
         
         #extract data from brut order
         if "TP :" in text and "SL :" in text and "Prix" in text:
@@ -145,11 +145,11 @@ while True:
                     nb_decimals = decimals.count("0")
                     ticker = exchange.fetch_ticker(symbol)
                     last_price = ticker['last']
-                    quantity = round(1*levier/last_price,nb_decimals)
+                    quantity = round(dollar*levier/last_price,nb_decimals)
                     if quantity == 0:
                         quantity = 1/10**nb_decimals
                 else:
-                    quantity = round(1*levier/last_price)
+                    quantity = round(dollar*levier/last_price)
                 print('Quantity',quantity)
                 
                 #Orders
