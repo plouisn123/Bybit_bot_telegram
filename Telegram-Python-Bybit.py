@@ -8,11 +8,9 @@ exchange = ccxt.bybit({
 
 bot_token = 'BOT_TOKEN'
 channel_id = '@CHANEL'
-
 last_update_id = 0
 
-#Récupère le message dans le canal télégram
-
+#Get new messages from Telegram Chanel
 while True:
     response = requests.get(f"https://api.telegram.org/botBOT_TOKEN/getUpdates?offset={last_update_id+1}&allowed_updates=[\"channel_post\"]").json()
     updates = response["result"]
@@ -20,12 +18,10 @@ while True:
         message = update["channel_post"]["text"]
         #message = update["channel_post"]["text"]
         last_update_id = update["update_id"] 
-        
-        #Extraction et traitement des données
         text = message
-        
         print(text)
         
+        #extract data from brut order
         if "TP :" in text and "SL :" in text and "Prix" in text:
             
             #LONG or SHORT
@@ -39,7 +35,7 @@ while True:
                 #print(type(BorS))
                 #print(type(close))
                 
-            #Paire    
+            #Pair    
             start = text.find(" ")
             end = text.find("(", start)
             if start != -1 and end != -1:
@@ -49,24 +45,24 @@ while True:
                 #print(type(symbol))
                 #print(type(crypto))
 
-            #Prix entrée n°1    
+            #Entry price number 1                 
             start = text.find("entré")
             end = text.find("-", start)
             if start != -1 and end != -1:
                 PE11 = text[start+8:end]
                 PE1 = float(PE11.replace(",", "."))
-                #print('Prix Entrée 1:',PE1)
+                #print('Entry Price 1:',PE1)
 
-            #Prix d'entrée n°2  
+            #Enter Price number 2
             start = text.find("-")
             end = text.find(" ", start)
             if start != -1 and end != -1:
                 PE22 = text[start+1:end-3]
                 PE2 = float(PE22.replace(",", "."))
-                #print('Prix Entrée 2:',PE2)
+                #print('Entry Price 2:',PE2)
                 #print(type(PE2))
 
-            #TP n°i    
+            #Take Profit number 1   
             start = text.find("TP")
             end = text.find(" SL", start)
             if start != -1 and end != -1:
@@ -76,23 +72,24 @@ while True:
                 print('Take Profit:',TPs[1])
                 #print(type(TPs[1]))
 
-            #SL    
+            #Stop Loss  
             start = text.find("SL")
             end = text.find("Chaque", start)
             if start != -1 and end != -1:
                 SLL = text[start+5:end-2]
                 SL = float(SLL.replace(",", "."))
-                print('StopLoss:',SL)
+                print('Stop Loss:',SL)
                 #print(type(SL))
                 
-            #Prix d'entrée
+            #Set the arguments
+            #Entry price
             ticker = exchange.fetch_ticker(symbol)
             last_price = ticker['last']
             nb_decimals = len(str(last_price)) - str(last_price).index('.') - 1
             index = str(last_price).find('.')
             #print('last price: ',last_price)
             if PE1 < last_price < PE2:
-                if index == -1: #est ce que le prix de la crypto à une virgule ?
+                if index == -1: 
                     PE = round(last_price*1.001)
                     print('PE:',PE)
                 else:
@@ -107,7 +104,7 @@ while True:
                 PE = PE1
                 print('PE:',PE)
 
-            #choix levier
+            #Leverage
             ticker = exchange.fetch_ticker(symbol)
             last_price = ticker['last']
             
@@ -119,13 +116,13 @@ while True:
                 levier = 25
             if last_price >= 500:
                 levier = 35
-            print('Levier',levier)
+            print('Leverage',levier)
 
-            #Passage des ordres
+            #Place order
             if symbol is not None and BorS is not None and PE is not None and close is not None and TPs[1] is not None and SL is not None and levier is not None:
-                info_leviers=exchange.fetch_positions(symbol)#récupère le gros tas d'info sur la paire
+                info_leviers=exchange.fetch_positions(symbol) #get infos about the pair (actual leverage and minimal quantity)
                 size = info_leviers[0]['info']['size']
-                #leviers
+                #Set Leverage 
                 if len(info_leviers) == 1:
                     levier_LS = info_leviers[0]['leverage']
                 else:
@@ -142,7 +139,7 @@ while True:
                         if levier != levier_short:
                             exchange.set_leverage(symbol=symbol, leverage=levier)
                             
-                #calcul quantity
+                #Quantity
                 if "." in size:
                     decimals = size.split(".")[1]
                     nb_decimals = decimals.count("0")
@@ -155,7 +152,7 @@ while True:
                     quantity = round(1*levier/last_price)
                 print('Quantity',quantity)
                 
-                #ordres
+                #Orders
                 exchange.create_order(symbol=symbol, type='Limit', side=BorS, amount=quantity, price=PE)            #Entry
                 exchange.create_order(symbol=symbol, type='Limit', side=close, amount=quantity, price=TPs[1])       #TP 
                 if BorS == 'Buy':
@@ -163,8 +160,7 @@ while True:
                 else:
                     exchange.create_limit_buy_order(symbol=symbol, amount=quantity, price=SL, params = {'stopPrice': SL}) #SL (short)
                     
- 
-#si liquidation avant SL, SL considéré comme un short
+ #Problem 1: if liquidation price > stop loss, stop loss order become short order
 
         
                
