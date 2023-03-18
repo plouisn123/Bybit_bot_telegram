@@ -1,7 +1,10 @@
 # Bybit_bot_telegram
 
-Hello, here you can find my python script which can copy orders from Telegram chanel to Bybit Futures
+Hello, 
+Here you can find my python script which can copy orders from Telegram chanel to Bybit Futures.
 
-##DISCLAMER: CODE ONLY WORKS FOR A SPECIFIC TELEGRAM MESSAGE
+The code takes: Enrty Price, Take Profit, Stop Loss, Leverage, Quantity, Pair, Long or Short
 
-You can contact me if you need help
+#DISCLAMER: Only works with specific message
+
+
