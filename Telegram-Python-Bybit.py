@@ -83,8 +83,7 @@ while True:
                 
             #Set the arguments
             #Entry price
-            ticker = exchange.fetch_ticker(symbol)
-            last_price = ticker['last']
+            last_price = exchange.fetch_ticker(symbol)['last']
             nb_decimals = len(str(last_price)) - str(last_price).index('.') - 1
             index = str(last_price).find('.')
             #print('last price: ',last_price)
@@ -105,18 +104,29 @@ while True:
                 print('PE:',PE)
 
             #Leverage
-            ticker = exchange.fetch_ticker(symbol)
-            last_price = ticker['last']
             
+            lev_max = exchange.fetch_derivatives_market_leverage_tiers(symbol)[0]['maxLeverage'] #maximum leverage            
             if 0.1 < last_price < 100:
-                levier = 20
+                if lev_max < 20:
+                    levier = lev_max
+                else:
+                    levier = 20
             if last_price <= 0.1:
-                levier = 15
+                if lev_max < 15:
+                    levier = lev_max
+                else:
+                    levier = 15
             if 100 <= last_price < 500:
-                levier = 25
+                if lev_max < 25:
+                    levier = lev_max
+                else:
+                    levier = 25
             if last_price >= 500:
-                levier = 35
-            print('Leverage',levier)
+                if lev_max < 35:
+                    levier = lev_max
+                else:
+                    levier = 35
+            print('Levier',levier)
 
             #Place order
             if symbol is not None and BorS is not None and PE is not None and close is not None and TPs[1] is not None and SL is not None and levier is not None:
@@ -143,8 +153,6 @@ while True:
                 if "." in size:
                     decimals = size.split(".")[1]
                     nb_decimals = decimals.count("0")
-                    ticker = exchange.fetch_ticker(symbol)
-                    last_price = ticker['last']
                     quantity = round(dollar*levier/last_price,nb_decimals)
                     if quantity == 0:
                         quantity = 1/10**nb_decimals
