@@ -33,15 +33,16 @@ while True:
             PE2 = 'ENTRY PRICE NUMBER 2' #float
             SL = 'STOP LOSS' #float
             TP = 'TAKE PROFIT' #float
-            PAIRE = 'BTCUSDT' #str
+            PAIRE = 'BTCUSDT' 
+            leverage = '50' 
             
             
             #Entry Price
             last_price = exchange.fetch_ticker(symbol)['last'] # take the last price 
-            nb_decimals = len(str(last_price)) - str(last_price).index('.') - 1 #find the number of decimals
+            nb_decimals = len(str(last_price)) - str(last_price).index('.') - 1 #find the number of decimals for the entry price
             index = str(last_price).find('.')
             if PE1 < last_price < PE2:
-                if index == -1: #est ce que le prix de la crypto à une virgule ?
+                if index == -1: #finding if the coin has decimals
                     PE = round(last_price*1.001)
                     print('PE:',PE)
                 else:
@@ -56,35 +57,16 @@ while True:
                 PE = PE1
                 print('PE:',PE)
 
-            #choix levier
-            lev_max = exchange.fetch_market_leverage_tiers(symbol)[0]['maxLeverage'] #levier maximum
-            if 0.1 < last_price < 100:
-                if lev_max < 20:
-                    levier = lev_max
-                else:
-                    levier = 20
-            if last_price <= 0.1:
-                if lev_max < 15:
-                    levier = lev_max
-                else:
-                    levier = 15
-            if 100 <= last_price < 500:
-                if lev_max < 25:
-                    levier = lev_max
-                else:
-                    levier = 25
-            if last_price >= 500:
-                if lev_max < 35:
-                    levier = lev_max
-                else:
-                    levier = 35
+            #Leverage
+            lev_max = exchange.fetch_market_leverage_tiers(symbol)[0]['maxLeverage'] #Take the maximum leverage 
+            if leverage > lev_max:
+                leverage = lev_max
+               
             print('Levier',levier)
             
-            levier = float(10)
-            ##Passage des ordres
+            ##ORDERS
             if all(var in globals() for var in ['BorS', 'PE', 'close', 'TPs', 'SL', 'levier']):
-                info_leviers=exchange.fetch_positions(symbol) #récupère le gros tas d'info sur la paire
-                size = info_leviers[0]['info']['size'] #taille de l'ordre long en court (recuperer nb décimals)
+                info_leviers=exchange.fetch_positions(symbol) #get informations on the pair
                 #leviers
                 if len(info_leviers) == 1:
                     levier_LS = info_leviers[0]['leverage']
@@ -103,19 +85,20 @@ while True:
                         if levier != levier_short:
                             exchange.set_leverage(symbol=symbol, leverage=levier)
                            
-                #calcul quantity
+                #Quantity
+                size = info_leviers[0]['info']['size'] #number of decimals for the trade size
                 if "." in size:
                     decimals = size.split(".")[1]
                     nb_decimals = decimals.count("0")
-                    quantity = round(levier/last_price,nb_decimals)
+                    quantity = round(100*levier/last_price,nb_decimals) #100 is the USDT quantity use from your wallet 
                     if quantity == 0:
                         quantity = 1/10**nb_decimals
                 else:
-                    quantity = round(levier/last_price)
+                    quantity = round(100*levier/last_price) #100 is the USDT quantity use from your wallet
                 print('Quantity',quantity)
                 
                 ## Ordres
-                #Entrer
+                #Entry
                 orderPE = exchange.create_limit_order(symbol=symbol, side=BorS, amount=quantity, price=PE)
     
                 #TP
@@ -126,30 +109,30 @@ while True:
                 else:
                     orderSL = exchange.create_limit_buy_order(symbol=symbol, amount=quantity, price=SL, params = {'stopPrice': SL}) #Open long
         
-                #ajouter les ordres au dico
+                #stock orders id
                 dico[symbol]=[]
                 dico[symbol].append(orderPE['id']), dico[symbol].append(orderTP['id']), dico[symbol].append(orderSL['id'])
 
                 time.sleep(5)
           
-    ## Gestion des ordes 
-    order_book = exchange.fetch_derivatives_open_orders() #liste des ordres à executer
+    ## Orders check
+    order_book = exchange.fetch_derivatives_open_orders() #wainting orders
     if len(order_book) != 0:
         symb = []
         for i in range(len(order_book)):
-            symb.append(order_book[i]['info']['symbol']) #nom des paires de tous les ordres dans une liste
+            symb.append(order_book[i]['info']['symbol']) #name of pair from wainting orders
 
-        # nombre d'ordres par paire
+        # number of orders for one pair
         dico_actif = {}
         for item in symb:
             if item in dico_actif:
                 dico_actif[item] += 1
             else:
                 dico_actif[item] = 1
-        liste_actif = list(dico_actif.items()) #nombre d'ordres par paire en liste
+        liste_actif = list(dico_actif.items())
         #print(liste_actif)
 
-        #récupération des paires de trades en cours
+        #take the pair of open trade
         trade_actif = exchange.fetch_derivatives_positions()
         paire_active = []
         if len(trade_actif) != 0:
@@ -157,15 +140,15 @@ while True:
             for i in range(len(trade_actif)):
                 paire_active.append(trade_actif[i]['info']['symbol'])
         
-        # cloture des trades inutiles + suppression ID dans le dico
+        # close useless trades and remove pair from dico
         for i in range(len(dico)):
-            if liste_actif[i][1] == 2: # vérifier si le trade n'a pas été fermé ou liquidé quand 2 ordres sont ouverts
-                #quel ordre est fermé ? 
+            if liste_actif[i][1] == 2: # check if the trade hasn't been closed or liquidated
+                #take statut order
                 fpe = exchange.fetch_order_status(id = dico[list(dico.keys())[i]][0], symbol=list(dico.keys())[i])
                 ftp = exchange.fetch_order_status(id = dico[list(dico.keys())[i]][1], symbol=list(dico.keys())[i])
                 fsl = exchange.fetch_order_status(id = dico[list(dico.keys())[i]][2], symbol=list(dico.keys())[i])
                 #print('222',fpe, ftp, fsl)
-                if list(dico.keys())[i] not in paire_active: #paire du dico des ordres pas dans les paires en cours de trade ? 
+                if list(dico.keys())[i] not in paire_active: #pair in the dico not in pair of open trade?
                     if fpe != 'open':
                         exchange.cancel_derivatives_order(id= dico[list(dico.keys())[i]][1], symbol=list(dico.keys())[i])
                         exchange.cancel_derivatives_order(id= dico[list(dico.keys())[i]][2], symbol=list(dico.keys())[i])
@@ -180,7 +163,7 @@ while True:
                         exchange.cancel_derivatives_order(id= dico[list(dico.keys())[i]][1], symbol=list(dico.keys())[i])
                         del dico[list(dico.keys())[i]]
                 
-            if liste_actif[i][1] == 1: # vérifier si le trade n'a pas été fermé ou liquidé quand 1 ordres sont ouverts
+            if liste_actif[i][1] == 1: # check if the trade hasn't been closed or liquidated 
                 #quel ordre est fermé ? 
                 fpe = exchange.fetch_order_status(id = dico[list(dico.keys())[i]][0], symbol=list(dico.keys())[i])
                 ftp = exchange.fetch_order_status(id = dico[list(dico.keys())[i]][1], symbol=list(dico.keys())[i])
@@ -196,8 +179,6 @@ while True:
                     exchange.cancel_derivatives_order(id= dico[list(dico.keys())[i]][0], symbol=list(dico.keys())[i])
                     del dico[list(dico.keys())[i]]
         time.sleep(4)
-    
-    #print(dico)
   
 
 
