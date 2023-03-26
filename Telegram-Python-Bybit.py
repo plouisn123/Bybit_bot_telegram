@@ -18,11 +18,11 @@ dico  = {}
 while True:
     response = requests.get(f"https://api.telegram.org/botYOUR_BOT_TOKEN/getUpdates?offset={last_update_id+1}&allowed_updates=[\"channel_post\"]").json()
     updates = response["result"]
-    for update in updates:
-        if "channel_post" in update and "text" in update["channel_post"]:
-            message = update["channel_post"]["text"]
+    if len(updates) != 0:
+        if "channel_post" in updates[-1] and "text" in updates[-1]["channel_post"]:
+            message = updates[-1]["channel_post"]["text"]
             text = message
-            last_update_id = update["update_id"]
+            last_update_id = updates[-1]["update_id"]
         else:
             text = ''
         
