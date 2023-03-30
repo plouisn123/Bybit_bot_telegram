@@ -42,7 +42,7 @@ while True:
             nb_decimals = len(str(last_price)) - str(last_price).index('.') - 1 #find the number of decimals for the entry price
             index = str(last_price).find('.')
             if PE1 < last_price < PE2:
-                if index == -1: #finding if the coin has decimals
+                if index == -1: #est ce que le prix de la crypto à une virgule ?
                     PE = round(last_price*1.001)
                     print('PE:',PE)
                 else:
@@ -50,12 +50,21 @@ while True:
                     PE = round(last_price*1.001,nb_decimals)
                     print('PE:',PE)
                     
-            if last_price > PE2:
-                PE = PE2
-                print('PE:',PE)
-            if last_price < PE1:
-                PE = PE1
-                print('PE:',PE)
+            elif last_price > PE2:
+                if BorS == 'Buy':
+                    PE = PE2
+                    print('PE:',PE)
+                else:
+                    PE = last_price
+                    print('PE:',PE)
+                
+            elif last_price < PE1:
+                if BorS == 'Buy':
+                    PE = last_price
+                    print('PE:',PE)
+                else:
+                    PE = PE1
+                    print('PE:',PE)
 
             #Leverage
             lev_max = exchange.fetch_market_leverage_tiers(symbol)[0]['maxLeverage'] #Take the maximum leverage 
